@@ -1,6 +1,7 @@
 use tokio::net::{ TcpListener, TcpStream };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use std::io;
+use crate::parser;
 
 pub async fn conn_accept() -> io::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:8080").await?;
@@ -17,7 +18,6 @@ pub async fn conn_accept() -> io::Result<()> {
 }
 
 async fn conn_goal(mut socket: TcpStream) {
-    //max bytes = 1024
     let mut buf = [0u8; 1024];
     let n = match socket.read(&mut buf).await {
         Ok(0) => return,
@@ -28,7 +28,15 @@ async fn conn_goal(mut socket: TcpStream) {
         }
     };
 
-    println!("{:?}",socket.peer_addr());
+    if parser::tls_client_hello(&buf[..bytes_len]) {
+        if let Some(domain) = parser::extract_sni(&buf[..bytes_len]) {
+            println!("tls domain: {:?}",domain);
+        } else {
+            println!("tls, but not include domain");
+        }
+    } else {
+        println!("normal packet");
+    }
 
     // change byte to utf8
     let request = String::from_utf8_lossy(&buf[..n]);
