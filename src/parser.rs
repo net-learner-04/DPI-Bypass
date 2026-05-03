@@ -26,14 +26,14 @@ pub fn extract_sni(buf: &[u8]) -> Option<String> {
     let compression_len = buf[index] as usize;
     if index + 1 + compression_len > buf.len() {return None;}
 
-    if index + 1 >= buf.len() {return None;}
     index += 1 + compression_len;
+    if index + 1 >= buf.len() {return None;}
     let extension_len = ((buf[index] as usize) << 8) | (buf[index + 1] as usize);
     index += 2;
     let extension_len_end_index = index + extension_len;
 
     while index < extension_len_end_index {
-        if index + 3 >= buf.len() {return None;}
+        if index + 4 > buf.len() {return None;}
 
         let ext_type = ((buf[index] as usize) << 8) | (buf[index + 1] as usize);
         let ext_len = ((buf[index + 2] as usize) << 8) | (buf[index + 3] as usize);
@@ -41,6 +41,7 @@ pub fn extract_sni(buf: &[u8]) -> Option<String> {
         if ext_type == 0 {
             if index + 8 >= buf.len() {break;}
 
+            if buf[index + 6] != 0x00 { break; }
             let sni_name_len = ((buf[index + 7] as usize) << 8) | (buf[index + 8] as usize);
             let sni_start = index + 9;
 
