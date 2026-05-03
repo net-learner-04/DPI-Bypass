@@ -1,7 +1,8 @@
-mod proxy;
+mod parser;
+mod pkt_control;
 use std::io;
 
-#[tokio::main]
-async fn main() -> io::Result<()> {
-    proxy::conn_accept().await
+fn main() -> io::Result<()> {
+    pkt_control::start_control()?;
+    Ok(())
 }
