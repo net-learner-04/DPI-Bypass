@@ -4,5 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tokio = { version = "1.52.1", features = ["full"] }
+ctrlc = "3.5.2"
+etherparse = "0.20.1"
+nfq = "0.2.5"
 nix = {version = "0.27", features = ["user"]}
+socket2 = { version = "0.6.3", features = ["all"] }
