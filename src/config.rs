@@ -72,11 +72,3 @@ impl Iptables {
         Ok(())
     }
 }
-
-impl Drop for Iptables {
-    fn drop(&mut self) {
-        if let Err(e) = self.iptables_remove() {
-            eprintln!("Cannot drop the previous process: {e}");
-        }
-    }
-}
