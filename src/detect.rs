@@ -3,8 +3,6 @@ use nfq::{Queue, Verdict};
 use std::io;
 
 pub fn start_control() -> io::Result<()> {
-    let domain_list = ["youtube.com"];
-
     let injector = Injector::new()?;
 
     let mut queue = Queue::open()?;
@@ -60,19 +58,14 @@ pub fn start_control() -> io::Result<()> {
             continue;
         }
 
-        if let Some(domain) = parser::extract_sni(tls_data) {
-            println!("domain: {}",domain);
-            if domain_list.iter().any(|&target| domain.contains(target)) {
-                if let Some((target_ip, frag_1, frag_2)) = forge::split(payload) {
-                    injector.shoot(target_ip, &frag_1)?;
-                    injector.shoot(target_ip, &frag_2)?;
-                    println!("dpi success: {}", domain);
+        if let Some((target_ip, frag_1, frag_2)) = forge::split(payload) {
+            injector.shoot(target_ip, &frag_1)?;
+            injector.shoot(target_ip, &frag_2)?;
+            if let Some(domain) = parser::extract_sni(tls_data) {println!("split: {domain}");}
 
-                    msg.set_verdict(Verdict::Drop);
-                    queue.verdict(msg)?;
-                    continue;
-                }
-            }
+            msg.set_verdict(Verdict::Drop);
+            queue.verdict(msg)?;
+            continue;
         }
 
         msg.set_verdict(Verdict::Accept);
