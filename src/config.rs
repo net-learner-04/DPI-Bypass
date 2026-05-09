@@ -39,70 +39,37 @@ impl Iptables {
         }
     }
 
-    //sudo iptables -t filter -I OUTPUT -p tcp --dport 443 -j NFQUEUE --queue-num 0
+    // sudo iptables -t filter -I OUTPUT -p tcp --dport 443 -j NFQUEUE --queue-num 0
 
-    pub fn apply(&self) -> Result<(), io::Error> {
+    fn build_args(&self, flag: &str) -> Vec<String> {
         let mut args: Vec<String> = Vec::new();
-
         if let Some(t) = &self.table {
             args.push("-t".to_string());
             args.push(t.clone());
         }
-        args.push(self.flag.clone());
+        args.push(flag.to_string());
         args.push(self.chain.clone());
-        for condition in &self.conditions {
-            args.push(condition.clone());
-        }
+        args.extend(self.conditions.clone());
         args.push("-j".to_string());
         args.push(self.target.clone());
-        for opt in &self.target_opt {
-            args.push(opt.clone());
-        }
+        args.extend(self.target_opt.clone());
+        args
+    }
 
-        Command::new("iptables").args(args).status()?;
-
+    pub fn apply(&self) -> Result<(), io::Error> {
+        Command::new("iptables")
+            .args(self.build_args(&self.flag))
+            .status()?;
         Ok(())
     }
 
-    //sudo iptables -D OUTPUT 1
+    // sudo iptables -D OUTPUT -p tcp --dport 443 -j NFQUEUE --queue-num 0
 
     pub fn iptables_remove(&self) -> Result<(), io::Error> {
-        let nfq_number = Self::get_nfqueue();
-
-        match nfq_number {
-            Some(n) => {
-                let n_str = n.to_string();
-                Command::new("iptables")
-                    .args(["-D", "OUTPUT", &n_str])
-                    .status()?;
-                Ok(())
-            }
-            None => Err(io::Error::other("NFQUEUE does not exist")),
-        }
-    }
-
-    //sudo iptables -L OUTPUT --line-numbers -n
-
-    fn get_nfqueue() -> Option<u32> {
-        let nfqueue = Command::new("sudo")
-            .arg("iptables")
-            .args(["-L", "OUTPUT", "--line-numbers", "-n"])
-            .output()
-            .ok()?;
-
-        let nfqueue = String::from_utf8_lossy(&nfqueue.stdout);
-
-        for line in nfqueue.lines() {
-            if line.contains("NFQUEUE") {
-                let nfq_num = line.split_whitespace().next();
-
-                match nfq_num {
-                    Some(n) => return n.parse::<u32>().ok(),
-                    None => return None,
-                }
-            }
-        }
-        None
+        Command::new("iptables")
+            .args(self.build_args("-D"))
+            .status()?;
+        Ok(())
     }
 }
 
